@@ -1,0 +1,12 @@
+[project]
+name = "claude-aconex-skill"
+version = "0.1.0"
+description = "Claude skill for Oracle Aconex: register, mail, directory, downloads and human-approved drafts"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

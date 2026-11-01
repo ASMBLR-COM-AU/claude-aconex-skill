@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Allows no network requests, so the browser itself stops this page sending keys anywhere. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; script-src 'unsafe-inline'; style-src 'unsafe-inline'; form-action 'none'; base-uri 'none'">
+<title>ASMBLR Aconex Setup</title>
+<meta name="description" content="Make a personal copy of the Aconex skill for Claude, with your credentials inside. This page can't send them anywhere.">
+<meta property="og:title" content="Connect Claude to Aconex">
+<meta property="og:description" content="Make a personal copy of the Aconex skill for Claude, with your credentials inside. This page can't send them anywhere.">
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #ffffff; --subtle: #f5f5f5; --text: #0a0a0a; --muted: #636363;
+    --line: #e5e5e5; --line-strong: #b5b5b5; --link: #c2410c; --brand: #f97316;
+    --button-text: #0a0a0a; --logo-filter: none; --bad: #b3261e; --good: #17693a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0a0a0a; --subtle: #171717; --text: #fafafa; --muted: #a3a3a3;
+      --line: #262626; --line-strong: #525252; --link: #fb923c; --brand: #f97316;
+      --button-text: #0a0a0a; --logo-filter: invert(1); --bad: #f2a29c; --good: #7ccf9c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0a0a0a; --subtle: #171717; --text: #fafafa; --muted: #a3a3a3;
+    --line: #262626; --line-strong: #525252; --link: #fb923c; --brand: #f97316;
+    --button-text: #0a0a0a; --logo-filter: invert(1); --bad: #f2a29c; --good: #7ccf9c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.6 Inter, "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 0 24px; }
+  header.bar { border-bottom: 1px solid var(--line); }
+  header.bar .wrap { display: flex; justify-content: space-between; align-items: center; height: 56px; }
+  .logo { display: block; height: 17px; width: auto; filter: var(--logo-filter); }
+  .bar-note { color: var(--muted); font-size: 13px; }
+  .intro { padding: 48px 0 40px; }
+  h1 { font-size: 30px; line-height: 1.2; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 12px; }
+  .intro p { color: var(--muted); font-size: 16px; max-width: 600px; margin: 0; }
+  .steps { list-style: none; margin: 0; padding: 0; }
+  .step { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 32px;
+          padding: 32px 0; border-top: 1px solid var(--line); }
+  .step-label { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; margin-bottom: 2px; }
+  h2 { font-size: 16px; line-height: 1.35; font-weight: 600; margin: 0; }
+  h3 { font-size: 14px; font-weight: 600; margin: 0 0 8px; }
+  p { margin: 0 0 12px; }
+  .step-body > :last-child, details > :last-child { margin-bottom: 0; }
+  a { color: var(--link); }
+  ol.plain, ul.plain { margin: 0 0 12px; padding-left: 20px; }
+  ol.plain li, ul.plain li { margin-bottom: 6px; }
+  .path { font-weight: 600; }
+  code { font: 13px/1.5 ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace; overflow-wrap: anywhere; }
+
+  details { border-top: 1px solid var(--line); }
+  details:last-of-type { border-bottom: 1px solid var(--line); }
+  summary { cursor: pointer; padding: 11px 0; font-weight: 600; list-style: none;
+            display: flex; align-items: center; gap: 10px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before { content: ""; width: 7px; height: 7px; flex: none; margin-left: 2px;
+                    border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted);
+                    transform: rotate(-45deg); transition: transform 0.12s; }
+  details[open] summary::before { transform: rotate(45deg); }
+  .details-body { padding: 0 0 16px 21px; }
+  .details-body > :last-child { margin-bottom: 0; }
+  .guide { margin-top: 16px; }
+
+  label { display: block; font-weight: 600; font-size: 14px; margin: 0 0 6px; }
+  .field { margin-bottom: 16px; }
+  input { width: 100%; height: 40px; padding: 0 10px; font: inherit; color: inherit;
+          background: var(--bg); border: 1px solid var(--line-strong); border-radius: 4px; }
+  .hint { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+  .input-row { display: flex; gap: 8px; }
+  .input-row input { flex: 1; min-width: 0; }
+  /* Hidden with CSS rather than a password field, so browsers and password managers don't offer to save it. */
+  .masked { -webkit-text-security: disc; }
+  button { font: inherit; font-weight: 600; font-size: 14px; height: 40px; padding: 0 14px; cursor: pointer;
+           border-radius: 4px; border: 1px solid var(--line-strong); background: var(--bg); color: inherit;
+           white-space: nowrap; }
+  button:hover { background: var(--subtle); }
+  button.primary { background: var(--brand); border-color: var(--brand); color: var(--button-text);
+                   height: 44px; padding: 0 20px; }
+  button.primary:hover { background: #ea580c; border-color: #ea580c; }
+  input:focus-visible, button:focus-visible, summary:focus-visible, a:focus-visible, .message:focus-visible {
+    outline: 2px solid var(--brand); outline-offset: 2px; }
+
+  .copy-row { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+              padding: 6px 6px 6px 12px; border: 1px solid var(--line); border-radius: 4px;
+              background: var(--subtle); margin-bottom: 8px; }
+  .copy-row button { height: 32px; padding: 0 10px; font-size: 13px; flex: none; }
+  .message { white-space: pre-wrap; font-size: 14px; padding: 12px; margin-bottom: 8px;
+             background: var(--subtle); border: 1px solid var(--line); border-radius: 4px; }
+  .notes { margin: 16px 0 0; font-size: 14px; color: var(--muted); }
+  .notes p { margin-bottom: 8px; }
+  .notes p:last-child { margin-bottom: 0; }
+  .notes strong { color: var(--text); font-weight: 600; }
+  .status { font-size: 14px; font-weight: 600; margin: 12px 0 0; }
+  .status.bad { color: var(--bad); }
+  .status.good { color: var(--good); }
+  footer { border-top: 1px solid var(--line); padding: 20px 0 48px; color: var(--muted); font-size: 13px; }
+  [hidden] { display: none !important; }
+
+  @media (max-width: 760px) {
+    .wrap { padding: 0 16px; }
+    .intro { padding: 32px 0 28px; }
+    h1 { font-size: 26px; }
+    .step { grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 24px 0; }
+    .bar-note { display: none; }
+    button.primary { width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) { summary::before { transition: none; } }
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="wrap">
+    <a href="https://asmblr.com.au" target="_blank" rel="noopener noreferrer"><img class="logo" src="data:image/png;base64,__LOGO__" alt="ASMBLR" width="112" height="17"></a>
+    <span class="bar-note">Aconex skill for Claude</span>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="intro">
+    <h1>Connect Claude to Aconex</h1>
+    <p>Create a personal copy of the skill with your credentials inside, then add it to Claude. You only need to do this once, and it's easiest on a computer.</p>
+  </div>
+
+  <ol class="steps">
+    <li class="step">
+      <div>
+        <div class="step-label">Step 1</div>
+        <h2>Get your credentials</h2>
+      </div>
+      <div class="step-body">
+        <p>You need the email you sign in to Aconex with, and a client ID and secret from a User-Bound OAuth client. A Lobby Admin at your company creates the client in Oracle's Lobby.</p>
+        <p class="hint">This page is for commercial Aconex, including AU1. If your company is on AU2 (Australian government), follow the <a href="https://github.com/ASMBLR-COM-AU/claude-aconex-skill/blob/main/aconex/references/setup.md" target="_blank" rel="noopener noreferrer">setup guide</a> instead.</p>
+        <div class="guide">
+          <details open>
+            <summary>I need to ask my Lobby Admin</summary>
+            <div class="details-body">
+              <div class="message" id="request" tabindex="0">Hi, I'd like to connect Claude to Aconex. Could you please create an OAuth client for me in the Lobby, with these settings?
+
+Resource application: Aconex APIs
+Type: User-Bound Integration
+User account: my Lobby account
+Organizations: our organisation
+
+Then please securely send me the client ID and client secret.
+
+Oracle's instructions: https://help.aconex.com/apis/create-an-oauth-client/</div>
+              <button type="button" data-copy="request">Copy message</button>
+            </div>
+          </details>
+          <details>
+            <summary>I'm a Lobby Admin</summary>
+            <div class="details-body">
+              <ol class="plain">
+                <li>Sign in to the <a href="https://constructionandengineering.oraclecloud.com/ui/v1/login/" target="_blank" rel="noopener noreferrer">Lobby</a>.</li>
+                <li>From the main menu, open <span class="path">OAuth Clients</span> and select <span class="path">Add</span>.</li>
+                <li>Enter a name and description, such as "Claude Aconex skill for Sam Taylor".</li>
+                <li>Set <span class="path">Resource Application</span> to Aconex APIs and <span class="path">Type</span> to User-Bound Integration.</li>
+                <li>Under <span class="path">User Account</span>, choose the person who will use Claude. Claude will see only what that person can see in Aconex.</li>
+                <li>Choose the <span class="path">Organizations</span>, accept the terms and select <span class="path">Add</span>.</li>
+                <li>Copy the client ID from the list. Select the eye icon to show the client secret.</li>
+                <li>If your organisation uses them, add the client to your IdP and sign-on policies under <span class="path">Security</span>.</li>
+              </ol>
+              <p>Send the ID and secret securely, and not in the same message. Oracle has the <a href="https://help.aconex.com/apis/create-an-oauth-client/" target="_blank" rel="noopener noreferrer">full instructions</a>.</p>
+            </div>
+          </details>
+        </div>
+      </div>
+    </li>
+
+    <li class="step">
+      <div>
+        <div class="step-label">Step 2</div>
+        <h2>Create your skill</h2>
+      </div>
+      <div class="step-body">
+        <div id="form">
+          <div class="field">
+            <label for="username">Aconex email</label>
+            <input id="username" inputmode="email" autocomplete="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore aria-describedby="username-hint">
+            <p class="hint" id="username-hint">The email you sign in to Aconex with, for the account the client is bound to.</p>
+          </div>
+          <div class="field">
+            <label for="credentials">Base64 credentials</label>
+            <div class="input-row">
+              <input id="credentials" class="masked" autocomplete="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore aria-describedby="credentials-hint">
+              <button type="button" id="show" aria-pressed="false">Show</button>
+            </div>
+            <p class="hint" id="credentials-hint">The base64 value of <code>client_id:secret</code>. If you only have the ID and secret, convert them below.</p>
+          </div>
+          <details id="convert">
+            <summary>Convert a client ID and secret</summary>
+            <div class="details-body">
+              <div class="field">
+                <label for="client-id">Client ID</label>
+                <input id="client-id" autocomplete="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore>
+              </div>
+              <div class="field">
+                <label for="client-secret">Client secret</label>
+                <input id="client-secret" class="masked" autocomplete="off" autocapitalize="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore>
+              </div>
+              <button type="button" id="convert-button">Convert</button>
+              <p class="status bad" id="convert-error" role="alert" hidden></p>
+            </div>
+          </details>
+          <p class="status good" id="convert-done" role="status" hidden>Converted. Your base64 credentials are in the field above.</p>
+          <details id="accounts">
+            <summary>My Lobby account is linked to more than one Aconex account</summary>
+            <div class="details-body">
+              <p class="hint">Aconex needs to know which one to use. Your Aconex administrator can give you both of these.</p>
+              <div class="field">
+                <label for="user-id">Aconex user ID</label>
+                <input id="user-id" inputmode="numeric" autocomplete="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore>
+              </div>
+              <div class="field">
+                <label for="user-site">Aconex website</label>
+                <input id="user-site" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://au1.aconex.com" data-1p-ignore data-lpignore="true" data-bwignore>
+              </div>
+            </div>
+          </details>
+          <button type="button" id="download" class="primary" style="margin-top: 20px">Download my skill</button>
+          <p class="status bad" id="error" role="alert" hidden></p>
+          <p class="status good" id="done" role="status" hidden>Downloaded aconex-skill-private.zip. Your credentials have been cleared from this page.</p>
+        </div>
+        <div class="notes">
+          <p><strong>This page can't send your credentials anywhere.</strong> Your browser blocks it from using the internet once it's open, so they stay on your computer until you upload the skill to Claude in step 3.</p>
+          <p><strong>The file you download contains your credentials.</strong> Anyone who has it can use Aconex as you, so don't email it or put it in a shared folder.</p>
+        </div>
+      </div>
+    </li>
+
+    <li class="step">
+      <div>
+        <div class="step-label">Step 3</div>
+        <h2>Add the skill to Claude</h2>
+      </div>
+      <div class="step-body">
+        <ol class="plain">
+          <li>In Claude, open <span class="path">Settings → Capabilities → Skills</span>.</li>
+          <li>Upload <code>aconex-skill-private.zip</code>.</li>
+          <li>Delete the zip from your Downloads folder.</li>
+        </ol>
+        <p>Uploading stores your credentials in your Claude account with the skill, and anything Claude reads from Aconex is handled under your Claude plan's terms. Check your company is happy with that before you upload.</p>
+        <p>Keep this skill to yourself. Anyone you share it with will be using Aconex as you. Each person needs their own. If the zip or your credentials ever get out, ask your Lobby Admin to delete the OAuth client.</p>
+        <p>Before you rely on it, read <a href="https://github.com/ASMBLR-COM-AU/claude-aconex-skill#before-you-use-it" target="_blank" rel="noopener noreferrer">what to watch for</a>.</p>
+      </div>
+    </li>
+
+    <li class="step">
+      <div>
+        <div class="step-label">Step 4</div>
+        <h2>Allow Aconex in Claude</h2>
+      </div>
+      <div class="step-body">
+        <p>In <span class="path">Settings → Capabilities</span>, add both domains to the allowed list. On a Team or Enterprise plan, an Owner does this in Organization settings.</p>
+        <div class="copy-row"><code id="domain-api">api.aconex.com</code><button type="button" data-copy="domain-api">Copy</button></div>
+        <div class="copy-row"><code id="domain-login">constructionandengineering.oraclecloud.com</code><button type="button" data-copy="domain-login">Copy</button></div>
+      </div>
+    </li>
+
+    <li class="step">
+      <div>
+        <div class="step-label">Step 5</div>
+        <h2>Check the connection</h2>
+      </div>
+      <div class="step-body">
+        <p>Start a new session in Claude and send this message. Claude will log in and list the projects it can see.</p>
+        <div class="copy-row"><code id="check-prompt">Check the Aconex connection</code><button type="button" data-copy="check-prompt">Copy</button></div>
+        <p>If your credentials change, return to this page, create a new zip and upload it to replace the old skill.</p>
+      </div>
+    </li>
+  </ol>
+</main>
+
+<footer>
+  <div class="wrap">Built by <a href="https://asmblr.com.au" target="_blank" rel="noopener noreferrer">ASMBLR</a>. Open source under the MIT licence: <a href="https://github.com/ASMBLR-COM-AU/claude-aconex-skill" target="_blank" rel="noopener noreferrer">see the code</a>. An independent project, not made by Oracle or Anthropic.</div>
+</footer>
+
+<script>
+const SKILL_FILES = __SKILL_FILES__;
+
+const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
+  let c = n;
+  for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+  return c >>> 0;
+});
+
+function crc32(bytes) {
+  let c = 0xffffffff;
+  for (const b of bytes) c = CRC_TABLE[(c ^ b) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+
+// Little-endian fields: each entry is [value, size in bytes].
+function fields(...entries) {
+  const out = [];
+  for (const [value, size] of entries) {
+    for (let i = 0; i < size; i++) out.push(Math.floor(value / 2 ** (8 * i)) & 0xff);
+  }
+  return out;
+}
+
+// A plain zip with no compression: 1980-01-01 timestamps, UTF-8 names.
+function buildZip(files) {
+  const encoder = new TextEncoder();
+  const parts = [], central = [];
+  let offset = 0;
+  for (const file of files) {
+    const name = encoder.encode(file.name);
+    const crc = crc32(file.data);
+    const shared = [[20, 2], [0x0800, 2], [0, 2], [0, 2], [0x21, 2], [crc, 4],
+                    [file.data.length, 4], [file.data.length, 4], [name.length, 2], [0, 2]];
+    const local = fields([0x04034b50, 4], ...shared);
+    parts.push(Uint8Array.from(local), name, file.data);
+    central.push(Uint8Array.from(fields([0x02014b50, 4], [20, 2], ...shared,
+      [0, 2], [0, 2], [0, 2], [0, 4], [offset, 4])), name);
+    offset += local.length + name.length + file.data.length;
+  }
+  const centralSize = central.reduce((sum, part) => sum + part.length, 0);
+  const end = Uint8Array.from(fields([0x06054b50, 4], [0, 2], [0, 2], [files.length, 2],
+    [files.length, 2], [centralSize, 4], [offset, 4], [0, 2]));
+  const all = [...parts, ...central, end];
+  const zip = new Uint8Array(all.reduce((sum, part) => sum + part.length, 0));
+  let at = 0;
+  for (const part of all) { zip.set(part, at); at += part.length; }
+  return zip;
+}
+
+function keyProblem(username, credentials, userId = "", userSite = "") {
+  if (Boolean(userId) !== Boolean(userSite)) return "Enter both your Aconex user ID and your Aconex website, or neither.";
+  if (userId && !/^\d+$/.test(userId)) return "Your Aconex user ID should only have numbers in it.";
+  if (userSite && !/^https:\/\/[a-z0-9-]+(\.[a-z0-9-]+)*\.(aconex\.com|aconex\.co\.uk|aconexasia\.com)$/.test(userSite)) return "Your Aconex website should look like https://au1.aconex.com.";
+  if (!username) return "Enter your Aconex email.";
+  if (!credentials) return "Enter your base64 credentials.";
+  if (/[\s\x00-\x1f\x7f-\x9f]/.test(username)) return "The email has a space or line break in it. Check you copied it correctly.";
+  const notBase64 = "Those credentials aren't valid base64 of client_id:secret. Check you copied the whole value.";
+  if (credentials.length % 4 || !/^[A-Za-z0-9+/]+={0,2}$/.test(credentials)) return notBase64;
+  const [clientId, ...secret] = atob(credentials).split(":");
+  if (!clientId || !secret.join(":")) return notBase64;
+  return "";
+}
+
+function clientProblem(clientId, secret) {
+  if (!clientId) return "Enter the client ID.";
+  if (!secret) return "Enter the client secret.";
+  if (/[\s:]/.test(clientId)) return "The client ID has a space or colon in it. Check you copied it correctly.";
+  if (/\s/.test(secret)) return "The client secret has a space or line break in it. Check you copied it correctly.";
+  if (clientId === secret) return "The client ID and secret are the same. Check you copied each one correctly.";
+  return "";
+}
+
+function encodeCredentials(clientId, secret) {
+  const bytes = new TextEncoder().encode(`${clientId}:${secret}`);
+  return btoa(String.fromCharCode(...bytes));
+}
+
+// The script takes the text inside a value's outer quotes as is, so any value survives.
+function keyFileText(username, credentials, userId = "", userSite = "") {
+  return "# Your private Aconex keys. Don't share this file or the skill it's in.\n"
+    + `ACONEX_CREDENTIALS_B64="${credentials}"\nACONEX_USERNAME="${username}"\n`
+    + (userId ? `ACONEX_USER_ID="${userId}"\nACONEX_USER_SITE="${userSite}"\n` : "");
+}
+
+function buildSkillZip(username, credentials, userId = "", userSite = "") {
+  const files = SKILL_FILES.map(([name, b64]) => ({
+    name, data: Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)),
+  }));
+  files.push({
+    name: "aconex/aconex.env",
+    data: new TextEncoder().encode(keyFileText(username, credentials, userId, userSite)),
+  });
+  return buildZip(files);
+}
+
+if (typeof document !== "undefined") {
+  const byId = (id) => document.getElementById(id);
+  const usernameInput = byId("username");
+  const credentialsInput = byId("credentials");
+  const clientIdInput = byId("client-id");
+  const clientSecretInput = byId("client-secret");
+  const userIdInput = byId("user-id");
+  const userSiteInput = byId("user-site");
+  const show = byId("show");
+
+  // A browser without this CSS shows the value anyway, so don't offer to.
+  show.hidden = !CSS.supports("-webkit-text-security", "disc");
+
+  const say = (element, text) => {
+    if (text) element.textContent = text;
+    element.hidden = !text;
+  };
+
+  show.addEventListener("click", () => {
+    const shown = !credentialsInput.classList.toggle("masked");
+    show.textContent = shown ? "Hide" : "Show";
+    show.setAttribute("aria-pressed", String(shown));
+  });
+
+  byId("convert-button").addEventListener("click", () => {
+    const clientId = clientIdInput.value.trim();
+    const secret = clientSecretInput.value.trim();
+    const problem = clientProblem(clientId, secret);
+    say(byId("convert-error"), problem);
+    byId("convert-done").hidden = true;
+    if (problem) return;
+    credentialsInput.value = encodeCredentials(clientId, secret);
+    clientIdInput.value = "";
+    clientSecretInput.value = "";
+    byId("convert").open = false;
+    byId("convert-done").hidden = false;
+  });
+
+  // There's no form element, so browsers never see a login being submitted.
+  // Enter presses the button next to the fields it's in.
+  const pressOnEnter = (inputs, buttonId) => {
+    for (const input of inputs) {
+      input.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        byId(buttonId).click();
+      });
+    }
+  };
+  pressOnEnter([clientIdInput, clientSecretInput], "convert-button");
+  pressOnEnter([usernameInput, credentialsInput, userIdInput, userSiteInput], "download");
+
+  byId("download").addEventListener("click", () => {
+    const username = usernameInput.value.trim();
+    const credentials = credentialsInput.value.trim();
+    const userId = userIdInput.value.trim();
+    const userSite = userSiteInput.value.trim().replace(/\/+$/, "");
+    const problem = keyProblem(username, credentials, userId, userSite);
+    say(byId("error"), problem);
+    byId("done").hidden = true;
+    if (problem) return;
+    const url = URL.createObjectURL(
+      new Blob([buildSkillZip(username, credentials, userId, userSite)], { type: "application/zip" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "aconex-skill-private.zip";
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    usernameInput.value = "";
+    credentialsInput.value = "";
+    userIdInput.value = "";
+    userSiteInput.value = "";
+    byId("convert-done").hidden = true;
+    byId("done").hidden = false;
+  });
+
+  for (const button of document.querySelectorAll("[data-copy]")) {
+    button.addEventListener("click", async () => {
+      const text = byId(button.dataset.copy).textContent;
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        const area = document.createElement("textarea");
+        area.value = text;
+        document.body.append(area);
+        area.select();
+        document.execCommand("copy");
+        area.remove();
+      }
+      const label = button.textContent;
+      button.textContent = "Copied";
+      setTimeout(() => { button.textContent = label; }, 1500);
+    });
+  }
+}
+</script>
+</body>
+</html>

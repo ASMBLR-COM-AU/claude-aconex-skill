@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+aconex-downloads/
+# Keys never belong in git, and a personal skill zip has them inside.
+*.env
+.env*
+*.zip
+
+# Oracle-derived API digest: kept only in private installs, never published.
+aconex/references/api/
+# Downloaded project files never belong in git.
+*.pdf
